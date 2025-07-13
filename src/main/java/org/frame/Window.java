@@ -4,12 +4,11 @@ import org.api.QrGenerator;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter; // ComponentListener için adapter
-import java.awt.event.ComponentEvent;    // ComponentEvent için
+import java.awt.event.*;
 import java.io.File;
 import javax.imageio.ImageIO;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -17,9 +16,10 @@ import java.net.URL;
 
 public class Window extends JFrame {
 
-    private String text = "Hello world";
+    private String Qrtext = "Hello world";
+    private Integer size = 1000;
 
-    private Integer size = 150;
+    private JLabel qrImageLabel;
 
     public Dimension getScreenDimension() {
         Toolkit toolkit = Toolkit.getDefaultToolkit();
@@ -31,7 +31,6 @@ public class Window extends JFrame {
         var height = dimension.height;
         var width = dimension.width;
 
-        // set height and width values
         {
             var condition = true;
             var passed = false;
@@ -48,37 +47,23 @@ public class Window extends JFrame {
                 passed = false;
             }
         }
-        // Initialize size
         setSize(width/2,height/2);
-
-        // Start frame on center
         centreWindow(this);
-
-        // Set layout
         setLayout(null);
-
-        // Set Theme
         getContentPane().setBackground(Color.LIGHT_GRAY);
-
-
-
-        // Set resizable
         setResizable(false);
-
-        // Set icon
         setIconImage(new ImageIcon("icon.png").getImage());
-
-        // Set title & name
         setTitle("Qr Creator");
         setName("Qr Creator");
 
-        // Add qr image
+        qrImageLabel = new JLabel();
+        add(qrImageLabel);
+
         initializeQrImage(getWidth(), getHeight());
 
-        // Add texts
+
         initializeTextsAndFields(getWidth(), getHeight());
 
-        // Stop program on Exited
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
@@ -88,7 +73,6 @@ public class Window extends JFrame {
     }
 
     private boolean isDividableByFive(Integer num) { return num % 5 == 0; }
-
     private boolean isDividableBySeven(Integer num) { return num % 7 == 0; }
 
     private void centreWindow(JFrame frame) {
@@ -101,24 +85,24 @@ public class Window extends JFrame {
         URL url;
         BufferedImage image;
         try {
-            url = new URL(QrGenerator.getQrcode(text, size));
+            url = new URL(QrGenerator.getQrcode(Qrtext, size));
             image = ImageIO.read(url);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         int x = frameWidth/7;
-        System.out.println("X : " + x);
         int y = frameHeight/5;
-        System.out.println("Y : " + y);
         int width = x*2;
-        System.out.println("Width : " + width);
         int height = y*2;
-        System.out.println("Height : " + height);
+
         Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         ImageIcon imageIcon = new ImageIcon(scaledImage);
-        JLabel imageComponent = new JLabel(imageIcon);
-        imageComponent.setBounds(x,y,width,height);
-        add(imageComponent);
+
+        qrImageLabel.setIcon(imageIcon);
+        qrImageLabel.setBounds(x, y, width, height);
+
+        qrImageLabel.revalidate();
+        qrImageLabel.repaint();
     }
 
     public void initializeTextsAndFields(int frameWidth, int frameHeight) {
@@ -127,15 +111,42 @@ public class Window extends JFrame {
             int y = frameHeight/5;
             int width = x/4*2;
             int height = y;
-            JLabel test = new JLabel("Test label");
-            test.setBounds(x,y,width,height);
-            add(test);
+            JLabel textLabel = new JLabel("Text :"); // Değişken adı çakışmasın
+            textLabel.setBounds(x,y,width,height);
+            textLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+
+            JTextField field = new JTextField("Hello World");
+            field.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    if (field.getText().length() >= 400) {
+                        field.setText(field.getText().substring(399,399));
+                    }
+                    updateQrCode(field);
+                }
+
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    updateQrCode(field);
+                }
+
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    updateQrCode(field);
+                }
+
+                private void updateQrCode(JTextField field) {
+                    if (field.getText().isEmpty()) {
+                        Qrtext = ".";
+                    } else {
+                        Qrtext = field.getText();
+                    }
+                    initializeQrImage(getWidth(), getHeight());
+                }
+            });
+            field.setBounds(x+50,y+45,width,height/5);
+            add(textLabel);
+            add(field);
         }
-    }
-
-
-    @Override
-    public void repaint() {
-        super.repaint();
     }
 }
