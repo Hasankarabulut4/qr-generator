@@ -22,5 +22,5 @@ This project is a QR Code Generator application developed in Java. It quickly co
 
 4. run project:
     ```bash
-    java -jar App.jar
+    java -jar Qrcode-creator.jar
     ```
